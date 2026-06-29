@@ -7,3 +7,4 @@ func main() {
 }
 
 func Add(a, b int) int { return a + b }
+// v2: trigger CI with updated Go workflow

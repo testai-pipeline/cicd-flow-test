@@ -1,10 +1,14 @@
-name: CI
+name: Go Build and Test
 
-on:
+on: 
   push:
-    branches: [ "main", "develop" ]
+    branches:
+      - main
+      - develop
   pull_request:
-    branches: [ "main", "develop" ]
+    branches:
+      - main
+      - develop
 
   workflow_dispatch:
 
@@ -12,31 +16,27 @@ jobs:
   build-and-test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      - name: Detect and build (Go)
-        if: hashFiles('go.mod') != ''
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22' # Specify the Go version
+
+      - name: Install dependencies
         run: |
-          go build ./...
-          go test -race ./...
+          go mod tidy
+          go mod download
 
-      - name: Detect and build (Node.js)
-        if: hashFiles('package.json') != ''
-        run: |
-          npm ci
-          npm run build --if-present
-          npm test --if-present
+      - name: Build
+        run: go build -v ./...
 
-      - name: Detect and build (Python)
-        if: hashFiles('requirements.txt') != ''
-        run: |
-          pip install -r requirements.txt
-          pytest --tb=short || true
+      - name: Run tests with coverage collection
+        run: go test -v -coverprofile=coverage.out ./...
 
-      - name: Detect and build (Maven)
-        if: hashFiles('pom.xml') != ''
-        run: mvn -B verify
-
-      - name: Detect and build (Gradle)
-        if: hashFiles('build.gradle', 'build.gradle.kts') != ''
-        run: ./gradlew build
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: go-coverage-report
+          path: coverage.out
